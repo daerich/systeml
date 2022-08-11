@@ -15,13 +15,23 @@
  * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
  * PERFORMANCE OF THIS SOFTWARE.
  */
+#include <stdlib.h>
 #include "systeml.h"
+
 int
 main(int argc, char** argv)
 {
-    int res = 0;
-    if (argc != 2)
-        return 1;
-    res = systeml(argv[1]);
+    int res = 127;
+    switch (argc){
+    case 2:
+        res = systeml(argv[1], 50000000);
+        break;
+    case 3:
+        const int len = strtol(argv[2], NULL, 10);
+        res = systeml(argv[1], len);
+        break;
+    default:
+        return res;
+    }
     return res;
 }

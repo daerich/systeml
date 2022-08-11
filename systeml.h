@@ -21,7 +21,7 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-#define SLEEPTIME 50000000
+//#define SLEEPTIME 50000000
 /* fork sigaction kill wait exec sigprocmask */
 static void
 sleeps(const long stime)
@@ -30,45 +30,46 @@ sleeps(const long stime)
     nanosleep(&times, NULL);
 }
 int
-systeml(const char * command)
+systeml(const char * command, const long len)
 {
     pid_t pid;
     sigset_t oldmask;
     sigset_t newmask;
-    struct sigaction sigact = { SIG_IGN, 0, 0, 0, 0 } ;
+    const struct sigaction sigact = { SIG_IGN, 0, 0, 0, 0 } ;
     struct sigaction oldact;
 
-    sigfillset(&newmask);
+    sigemptyset(&newmask);
     sigaddset(&newmask, SIGCHLD);
     sigprocmask(SIG_SETMASK, &newmask, &oldmask);
     sigaction(SIGINT, &sigact, &oldact);
     sigaction(SIGQUIT, &sigact, NULL);
     pid = fork();
-    if (pid == -1){
+    if (pid == -1) {
         printf("Error forking!\n");
         exit(1);
     }
-    if (pid == 0){
+    if (pid == 0) {
         /* child */
         execl("/bin/sh","sh", "-c", command, (char*) NULL);
     }
-    if (pid != 0){
+    if (pid != 0) {
         /* parent */
+        int wstatus = 1;
+        int waitpids = 0;
+
         sigprocmask(SIG_SETMASK, &oldmask, NULL); 
         sigaction(SIGINT, &oldact, NULL);
         sigaction(SIGQUIT, &oldact, NULL);
-        int wstatus = 1;
-        int waitpids = 0;
-        sleeps(SLEEPTIME);
+        sleeps(len);
         waitpids = waitpid(pid, &wstatus, WNOHANG);
         if (waitpids == 0){
             kill(pid, SIGTERM);
         } else if (waitpids != -1) {
             return WEXITSTATUS(wstatus);
         }
-        sleeps(SLEEPTIME);
+        sleeps(len);
         waitpids = waitpid(pid, &wstatus, WNOHANG);
-        if (waitpids == 0){
+        if (waitpids == 0) {
             kill(pid, SIGKILL);
         } else if (waitpids != -1) {
             return WEXITSTATUS(wstatus);
